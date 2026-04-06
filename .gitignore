@@ -41,4 +41,4 @@ test_output.txt
 test_run_output.txt
 validate_output*.txt
 uv_output.txt
-uv.lock
+

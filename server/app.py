@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
 
 from models import (
     ResetRequest, ResetResponse,
@@ -80,7 +81,7 @@ def health():
 # ─────────────────────────────────────────────────────────────
 
 @app.post("/reset", response_model=ResetResponse)
-def reset(request: ResetRequest):
+def reset(request: Optional[ResetRequest] = None):
     """
     Start a new episode.
 
@@ -89,7 +90,11 @@ def reset(request: ResetRequest):
 
     Example request body:
       {"task_id": "task1_easy", "scenario_id": 1}
+
+    If no body is sent, defaults to task1_easy, scenario 1.
     """
+    if request is None:
+        request = ResetRequest()
     try:
         response = env.reset(request)
         return response
