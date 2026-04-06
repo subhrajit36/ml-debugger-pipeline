@@ -1,0 +1,95 @@
+{
+  "task_id": "task1_easy",
+  "scenario_id": 2,
+  "title": "Fix Wrong Input Channels",
+  "description": "The model's first Conv2d layer expects 1 channel (grayscale) but the dataset provides 3-channel RGB images.",
+  "difficulty": "easy",
+  "max_steps": 5,
+  "target_metric": "forward_pass_success",
+
+  "initial_state": {
+    "error_log": "RuntimeError: Expected input channels=1 but got channels=3. Check Conv2d(in_channels=1, ...) — your data has 3 channels (RGB).",
+    "architecture_summary": "Conv2d(in_channels=1, out_channels=32, kernel_size=3) -> ReLU -> MaxPool2d(2) -> Linear(32*111*111, 128) -> Linear(128, 10)",
+    "data_shape": "[32, 3, 224, 224]",
+    "training_logs": [
+      "DataLoader ready. Images shape: [32, 3, 224, 224]",
+      "Epoch 1 | Forward pass... FAILED",
+      "RuntimeError: Expected input channels=1 but got channels=3"
+    ],
+    "current_metrics": {
+      "train_loss": -1.0,
+      "val_loss": -1.0,
+      "forward_pass_success": 0.0
+    }
+  },
+
+  "correct_actions": ["fix_tensor_reshape"],
+
+  "responses": {
+    "fix_tensor_reshape_correct": {
+      "result": "success",
+      "reward": 5.5,
+      "done": true,
+      "message": "✅ Correct! Conv2d in_channels updated to 3 (RGB). Forward pass successful.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... OK",
+        "Epoch 1 | train_loss=2.1983",
+        "Epoch 1 | val_loss=2.1761",
+        "Training stable."
+      ],
+      "metrics": {
+        "train_loss": 2.1983,
+        "val_loss": 2.1761,
+        "forward_pass_success": 1.0
+      }
+    },
+
+    "fix_tensor_reshape_wrong_shape": {
+      "result": "error",
+      "reward": -0.5,
+      "done": false,
+      "message": "❌ Wrong parameter. The input images have 3 channels (R, G, B). Set in_channels=3.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: Expected input channels=1 but got channels=3"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "modify_hyperparameters": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Hyperparameters won't fix a channel mismatch. The architecture is wrong.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: Expected input channels=1 but got channels=3"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "default": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ That won't fix the channel mismatch. Use fix_tensor_reshape with layer_name='conv1' and new_shape=3.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: Expected input channels=1 but got channels=3"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    }
+  }
+}

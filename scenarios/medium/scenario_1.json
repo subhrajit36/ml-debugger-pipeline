@@ -1,0 +1,172 @@
+{
+  "task_id": "task2_medium",
+  "scenario_id": 1,
+  "title": "Fix Overfitting",
+  "description": "The model memorizes training data but fails on validation. Train loss is low, val loss keeps rising. Apply dropout and data augmentation.",
+  "difficulty": "medium",
+  "max_steps": 10,
+  "target_metric": "val_loss",
+  "target_val_loss": 0.8,
+
+  "initial_state": {
+    "error_log": "",
+    "architecture_summary": "Conv2d(3,64) -> Conv2d(64,128) -> Conv2d(128,256) -> Linear(256*6*6, 1024) -> Linear(1024, 10). No dropout. No augmentation.",
+    "data_shape": "[32, 3, 64, 64]",
+    "training_logs": [
+      "Epoch 1  | train_loss=1.8821 | val_loss=2.1032",
+      "Epoch 2  | train_loss=1.2043 | val_loss=2.3841",
+      "Epoch 3  | train_loss=0.7211 | val_loss=2.9103",
+      "Epoch 4  | train_loss=0.3892 | val_loss=3.4512",
+      "Epoch 5  | train_loss=0.1203 | val_loss=4.1033",
+      "WARNING: Validation loss is increasing while training loss drops — classic overfitting!"
+    ],
+    "current_metrics": {
+      "train_loss": 0.1203,
+      "val_loss": 4.1033,
+      "accuracy": 0.41
+    }
+  },
+
+  "correct_actions": ["add_data_augmentation", "add_dropout"],
+
+  "action_states": {
+    "dropout_added": false,
+    "augmentation_added": false
+  },
+
+  "responses": {
+    "add_dropout_only": {
+      "result": "partial",
+      "reward": 1.5,
+      "done": false,
+      "message": "✅ Dropout added (rate=0.5). Val loss improved but still above target. Also try add_data_augmentation.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.4812 | val_loss=2.8901",
+        "Epoch 7  | train_loss=0.4201 | val_loss=2.7103",
+        "Epoch 8  | train_loss=0.3891 | val_loss=2.5812",
+        "Dropout helping — val loss trending down. Need more regularization."
+      ],
+      "metrics": {
+        "train_loss": 0.3891,
+        "val_loss": 2.5812,
+        "accuracy": 0.53
+      }
+    },
+
+    "add_augmentation_only": {
+      "result": "partial",
+      "reward": 1.5,
+      "done": false,
+      "message": "✅ Data augmentation applied (random flip + crop). Val loss improved but still above target. Also try add_dropout.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.5913 | val_loss=2.9812",
+        "Epoch 7  | train_loss=0.5201 | val_loss=2.7301",
+        "Epoch 8  | train_loss=0.4812 | val_loss=2.5013",
+        "Augmentation helping. Still overfitting — need dropout too."
+      ],
+      "metrics": {
+        "train_loss": 0.4812,
+        "val_loss": 2.5013,
+        "accuracy": 0.54
+      }
+    },
+
+    "both_dropout_and_augmentation": {
+      "result": "success",
+      "reward": 6.0,
+      "done": true,
+      "message": "✅ Excellent! Both dropout and augmentation applied. Val loss dropped below target 0.8!",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.6012 | val_loss=1.8902",
+        "Epoch 7  | train_loss=0.5512 | val_loss=1.2031",
+        "Epoch 8  | train_loss=0.5201 | val_loss=0.9812",
+        "Epoch 9  | train_loss=0.4981 | val_loss=0.7892",
+        "🎉 Target reached! val_loss=0.7892 < 0.8"
+      ],
+      "metrics": {
+        "train_loss": 0.4981,
+        "val_loss": 0.7892,
+        "accuracy": 0.78
+      }
+    },
+
+    "modify_hyperparameters_lr_low": {
+      "result": "partial",
+      "reward": 0.5,
+      "done": false,
+      "message": "⚠️ Lowering LR slightly reduced overfitting but val loss is still way above target. Try adding dropout and augmentation.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.9812 | val_loss=3.2013",
+        "LR reduced. Training slower. Overfitting still present."
+      ],
+      "metrics": {
+        "train_loss": 0.9812,
+        "val_loss": 3.2013,
+        "accuracy": 0.44
+      }
+    },
+
+    "modify_hyperparameters_lr_high": {
+      "result": "warning",
+      "reward": -0.5,
+      "done": false,
+      "message": "❌ High LR made training unstable. Loss is NaN. Restart with a lower learning rate.",
+      "training_logs": [
+        "Epoch 6  | train_loss=nan | val_loss=nan",
+        "WARNING: Training exploded. Gradient overflow detected."
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "accuracy": 0.10
+      }
+    },
+
+    "change_loss_function": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Changing the loss function alone won't fix overfitting. The model needs regularization (dropout + augmentation).",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.1891 | val_loss=4.2103",
+        "New loss applied. Overfitting worsened slightly."
+      ],
+      "metrics": {
+        "train_loss": 0.1891,
+        "val_loss": 4.2103,
+        "accuracy": 0.40
+      }
+    },
+
+    "fix_tensor_reshape": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ There is no shape mismatch here. The model runs fine — it's just overfitting.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.1203 | val_loss=4.2091",
+        "No change. Overfitting continues."
+      ],
+      "metrics": {
+        "train_loss": 0.1203,
+        "val_loss": 4.2091,
+        "accuracy": 0.41
+      }
+    },
+
+    "default": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Unknown action. Focus on regularization: try add_dropout and add_data_augmentation.",
+      "training_logs": [
+        "No action taken. Overfitting continues."
+      ],
+      "metrics": {
+        "train_loss": 0.1203,
+        "val_loss": 4.1033,
+        "accuracy": 0.41
+      }
+    }
+  }
+}

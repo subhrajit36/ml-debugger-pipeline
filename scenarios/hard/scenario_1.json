@@ -1,0 +1,218 @@
+{
+  "task_id": "task3_hard",
+  "scenario_id": 1,
+  "title": "Optimize Segmentation Pipeline to Hit IoU ≥ 0.55",
+  "description": "A multi-class semantic segmentation model sits at IoU=0.21. You have exactly 5 more epochs to reach IoU≥0.55. Tune the loss function and LR scheduler together.",
+  "difficulty": "hard",
+  "max_steps": 15,
+  "target_metric": "iou",
+  "target_iou": 0.55,
+
+  "initial_state": {
+    "error_log": "",
+    "architecture_summary": "U-Net: Encoder(ResNet50) -> BottleNeck(1024) -> Decoder(4x UpConv) -> Conv2d(64, num_classes=5). Loss: CrossEntropyLoss (unweighted). LR: 0.001 (constant).",
+    "data_shape": "[8, 3, 512, 512]",
+    "training_logs": [
+      "Epoch 1  | train_loss=1.8821 | val_loss=1.9012 | mIoU=0.09",
+      "Epoch 2  | train_loss=1.5013 | val_loss=1.5891 | mIoU=0.13",
+      "Epoch 3  | train_loss=1.3212 | val_loss=1.4013 | mIoU=0.17",
+      "Epoch 4  | train_loss=1.2031 | val_loss=1.3201 | mIoU=0.19",
+      "Epoch 5  | train_loss=1.1812 | val_loss=1.2891 | mIoU=0.21",
+      "Plateau detected. IoU improvement slowing. Target: 0.55 in 5 more epochs."
+    ],
+    "current_metrics": {
+      "train_loss": 1.1812,
+      "val_loss": 1.2891,
+      "iou": 0.21,
+      "epochs_remaining": 5
+    }
+  },
+
+  "correct_actions": ["add_lr_scheduler", "change_loss_function"],
+
+  "responses": {
+    "dice_loss_only": {
+      "result": "partial",
+      "reward": 2.0,
+      "done": false,
+      "message": "✅ Dice loss applied. Better at handling class imbalance. IoU improving but won't reach 0.55 without a scheduler. Add add_lr_scheduler.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.8921 | val_loss=0.9012 | mIoU=0.28",
+        "Epoch 7  | train_loss=0.7812 | val_loss=0.8213 | mIoU=0.33",
+        "Dice loss helping with class overlap. Needs LR scheduling to push further."
+      ],
+      "metrics": {
+        "train_loss": 0.7812,
+        "val_loss": 0.8213,
+        "iou": 0.33,
+        "epochs_remaining": 3
+      }
+    },
+
+    "focal_loss_only": {
+      "result": "partial",
+      "reward": 2.0,
+      "done": false,
+      "message": "✅ Focal loss applied. Focusing on hard examples. IoU improving. Combine with add_lr_scheduler to reach target.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.9123 | val_loss=0.9412 | mIoU=0.26",
+        "Epoch 7  | train_loss=0.8012 | val_loss=0.8521 | mIoU=0.31",
+        "Focal loss reducing background dominance. Needs LR boost."
+      ],
+      "metrics": {
+        "train_loss": 0.8012,
+        "val_loss": 0.8521,
+        "iou": 0.31,
+        "epochs_remaining": 3
+      }
+    },
+
+    "cosine_scheduler_only": {
+      "result": "partial",
+      "reward": 1.5,
+      "done": false,
+      "message": "⚠️ CosineAnnealing LR applied. Modest improvement. CrossEntropy alone is limiting IoU — change the loss function too.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.0812 | val_loss=1.1013 | mIoU=0.26  LR=0.0008",
+        "Epoch 7  | train_loss=0.9921 | val_loss=1.0212 | mIoU=0.30  LR=0.0005",
+        "Scheduler helping but loss function limiting segmentation quality."
+      ],
+      "metrics": {
+        "train_loss": 0.9921,
+        "val_loss": 1.0212,
+        "iou": 0.30,
+        "epochs_remaining": 3
+      }
+    },
+
+    "dice_and_cosine": {
+      "result": "success",
+      "reward": 7.0,
+      "done": true,
+      "message": "🏆 Excellent! Dice loss + CosineAnnealingLR hit the target. mIoU=0.57 ≥ 0.55!",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.7812 | val_loss=0.8013 | mIoU=0.32  LR=0.0009",
+        "Epoch 7  | train_loss=0.6021 | val_loss=0.6812 | mIoU=0.41  LR=0.0006",
+        "Epoch 8  | train_loss=0.4913 | val_loss=0.5523 | mIoU=0.49  LR=0.0004",
+        "Epoch 9  | train_loss=0.4012 | val_loss=0.4801 | mIoU=0.54  LR=0.0002",
+        "Epoch 10 | train_loss=0.3812 | val_loss=0.4523 | mIoU=0.57  LR=0.0001",
+        "🎉 Target reached! mIoU=0.57 ≥ 0.55"
+      ],
+      "metrics": {
+        "train_loss": 0.3812,
+        "val_loss": 0.4523,
+        "iou": 0.57,
+        "epochs_remaining": 0
+      }
+    },
+
+    "focal_and_cosine": {
+      "result": "success",
+      "reward": 7.0,
+      "done": true,
+      "message": "🏆 Excellent! Focal loss + CosineAnnealingLR hit the target. mIoU=0.56 ≥ 0.55!",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.8123 | val_loss=0.8512 | mIoU=0.30  LR=0.0009",
+        "Epoch 7  | train_loss=0.6512 | val_loss=0.7013 | mIoU=0.39  LR=0.0006",
+        "Epoch 8  | train_loss=0.5301 | val_loss=0.5812 | mIoU=0.47  LR=0.0004",
+        "Epoch 9  | train_loss=0.4512 | val_loss=0.5013 | mIoU=0.53  LR=0.0002",
+        "Epoch 10 | train_loss=0.4201 | val_loss=0.4712 | mIoU=0.56  LR=0.0001",
+        "🎉 Target reached! mIoU=0.56 ≥ 0.55"
+      ],
+      "metrics": {
+        "train_loss": 0.4201,
+        "val_loss": 0.4712,
+        "iou": 0.56,
+        "epochs_remaining": 0
+      }
+    },
+
+    "dice_and_step_scheduler": {
+      "result": "partial",
+      "reward": 3.0,
+      "done": false,
+      "message": "⚠️ Dice loss + StepLR improved IoU to 0.48 — close but not enough. Try CosineAnnealingLR for smoother decay.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.8012 | val_loss=0.8713 | mIoU=0.31",
+        "Epoch 8  | train_loss=0.5921 | val_loss=0.6523 | mIoU=0.41  LR step decay",
+        "Epoch 10 | train_loss=0.4812 | val_loss=0.5312 | mIoU=0.48",
+        "Close but under target 0.55. StepLR too abrupt for this task."
+      ],
+      "metrics": {
+        "train_loss": 0.4812,
+        "val_loss": 0.5312,
+        "iou": 0.48,
+        "epochs_remaining": 0
+      }
+    },
+
+    "crossentropy_and_scheduler": {
+      "result": "partial",
+      "reward": 1.5,
+      "done": false,
+      "message": "⚠️ CrossEntropy + scheduler improved things but not enough. CrossEntropy struggles with class imbalance in segmentation. Switch to Dice or Focal loss.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.0012 | val_loss=1.0512 | mIoU=0.27",
+        "Epoch 8  | train_loss=0.8923 | val_loss=0.9312 | mIoU=0.33",
+        "Epoch 10 | train_loss=0.8012 | val_loss=0.8712 | mIoU=0.38",
+        "Plateau at 0.38. CrossEntropy not suitable for multi-class segmentation."
+      ],
+      "metrics": {
+        "train_loss": 0.8012,
+        "val_loss": 0.8712,
+        "iou": 0.38,
+        "epochs_remaining": 0
+      }
+    },
+
+    "modify_hyperparameters": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Hyperparameter tweaks alone won't close the gap. Focus on the loss function and LR scheduler combination.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.1512 | val_loss=1.2301 | mIoU=0.22",
+        "Marginal change. Still well below target."
+      ],
+      "metrics": {
+        "train_loss": 1.1512,
+        "val_loss": 1.2301,
+        "iou": 0.22,
+        "epochs_remaining": 4
+      }
+    },
+
+    "add_dropout": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Dropout can slightly hurt segmentation models at inference. Focus on loss function and scheduler.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.2012 | val_loss=1.2813 | mIoU=0.20",
+        "Dropout added slight noise. No real improvement."
+      ],
+      "metrics": {
+        "train_loss": 1.2012,
+        "val_loss": 1.2813,
+        "iou": 0.20,
+        "epochs_remaining": 4
+      }
+    },
+
+    "default": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Unknown action. For segmentation: use change_loss_function (Dice or Focal) AND add_lr_scheduler (cosine).",
+      "training_logs": [
+        "No meaningful change. IoU still at 0.21."
+      ],
+      "metrics": {
+        "train_loss": 1.1812,
+        "val_loss": 1.2891,
+        "iou": 0.21,
+        "epochs_remaining": 5
+      }
+    }
+  }
+}

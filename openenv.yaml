@@ -1,0 +1,167 @@
+# openenv.yaml
+# ─────────────────────────────────────────────────────────────
+# This file tells the OpenEnv validator everything about our environment.
+# The hackathon runs `openenv validate` against this file.
+# ─────────────────────────────────────────────────────────────
+
+name: ml-pipeline-debugger
+version: "1.0.0"
+description: >
+  An agent environment where an AI acts as an ML engineer debugging broken deep
+  learning pipelines. The agent receives error logs, architecture summaries, and
+  training metrics, then applies fixes via a structured action space.
+  All responses are pre-computed from JSON scenario files — no real GPU training.
+
+author: DOT-DOT
+hf_username: subhrajit36
+
+# ─────────────────────────────────────────────────────────────
+# SERVER
+# ─────────────────────────────────────────────────────────────
+server:
+  host: 0.0.0.0
+  port: 7860
+  health_endpoint: /health
+  reset_endpoint: /reset
+  step_endpoint: /step
+  state_endpoint: /state
+
+# ─────────────────────────────────────────────────────────────
+# TASKS
+# ─────────────────────────────────────────────────────────────
+tasks:
+  - id: task1_easy
+    name: "Fix Tensor Dimension Mismatch"
+    difficulty: easy
+    max_steps: 5
+    description: >
+      A CNN model crashes with a shape mismatch between Conv and Linear layers.
+      The agent must identify the correct flatten dimension and call fix_tensor_reshape.
+    grader: forward_pass_success  # returns 0.0 or 1.0
+
+  - id: task2_medium
+    name: "Fix Overfitting"
+    difficulty: medium
+    max_steps: 10
+    description: >
+      Training loss drops but validation loss rises (classic overfitting).
+      The agent must apply both add_dropout and add_data_augmentation to
+      bring val_loss below the target threshold.
+    grader: val_loss_ratio  # score = 1.0 if current <= target else clamp((initial - achieved) / (initial - target), 0, 1)
+
+  - id: task3_hard
+    name: "Optimize Segmentation Pipeline"
+    difficulty: hard
+    max_steps: 15
+    description: >
+      A U-Net segmentation model is stuck at IoU=0.21. The agent must
+      combine the right loss function (Dice or Focal) with a LR scheduler
+      (CosineAnnealing) to reach IoU≥0.55 within 5 epochs.
+    grader: iou_ratio  # score = clamp(achieved_iou / target_iou, 0, 1)
+
+# ─────────────────────────────────────────────────────────────
+# ACTION SPACE
+# ─────────────────────────────────────────────────────────────
+action_space:
+  - name: fix_tensor_reshape
+    parameters:
+      layer_name: string
+      new_shape: integer
+
+  - name: modify_hyperparameters
+    parameters:
+      lr: float
+      batch_size: integer
+      epochs: integer
+
+  - name: add_data_augmentation
+    parameters:
+      strategy: string  # mild | aggressive | flip | crop | rotate
+
+  - name: change_loss_function
+    parameters:
+      name: string  # CrossEntropy | Focal | Dice
+
+  - name: add_dropout
+    parameters:
+      layer_name: string
+      rate: float  # 0.0 to 1.0
+
+  - name: add_lr_scheduler
+    parameters:
+      type: string  # cosine | step | plateau
+      params: object
+
+# ─────────────────────────────────────────────────────────────
+# OBSERVATION SPACE
+# ─────────────────────────────────────────────────────────────
+observation_space:
+  - name: error_log
+    type: string
+    description: Current error message (empty if no error)
+
+  - name: architecture_summary
+    type: string
+    description: Text description of model layers
+
+  - name: data_shape
+    type: string
+    description: Input tensor shape e.g. [32, 3, 224, 224]
+
+  - name: training_logs
+    type: list[string]
+    description: Lines of training output
+
+  - name: current_metrics
+    type: dict[string, float]
+    description: train_loss, val_loss, iou, accuracy, etc.
+
+  - name: done
+    type: boolean
+
+  - name: reward
+    type: float
+
+  - name: step
+    type: integer
+
+  - name: message
+    type: string
+    description: Human-readable explanation of last action result
+
+# ─────────────────────────────────────────────────────────────
+# REWARD FUNCTION
+# ─────────────────────────────────────────────────────────────
+reward_structure:
+  - event: epoch_completes_without_crash
+    reward: +0.1
+  - event: val_loss_drops_0.05
+    reward: +1.0
+  - event: correct_action_applied
+    reward: +0.5
+  - event: wrong_action_no_effect
+    reward: 0.0
+  - event: action_causes_nan_loss
+    reward: -0.5
+  - event: infinite_loop_detected
+    reward: -1.0
+  - event: task_solved
+    reward: +5.0
+
+# ─────────────────────────────────────────────────────────────
+# INFRASTRUCTURE
+# ─────────────────────────────────────────────────────────────
+infrastructure:
+  min_cpu: 2
+  min_ram_gb: 8
+  gpu_required: false
+  estimated_runtime_minutes: 10
+
+# ─────────────────────────────────────────────────────────────
+# ENVIRONMENT VARIABLES REQUIRED
+# ─────────────────────────────────────────────────────────────
+required_env_vars:
+  - API_BASE_URL
+  - MODEL_NAME
+  - HF_TOKEN
+  - OPENAI_API_KEY

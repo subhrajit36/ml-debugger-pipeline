@@ -1,0 +1,235 @@
+{
+  "task_id": "task3_hard",
+  "scenario_id": 2,
+  "title": "Optimize Segmentation Pipeline with Class Imbalance",
+  "description": "A multi-class semantic segmentation model is stuck at IoU=0.18 due to severe class imbalance (background dominates 85% of pixels). You must switch the loss function and add a LR scheduler to reach IoU≥0.55 within 5 epochs.",
+  "difficulty": "hard",
+  "max_steps": 15,
+  "target_metric": "iou",
+  "target_iou": 0.55,
+
+  "initial_state": {
+    "error_log": "",
+    "architecture_summary": "U-Net: Encoder(EfficientNet-B3) -> BottleNeck(512) -> Decoder(4x UpConv + SkipConnections) -> Conv2d(32, num_classes=8). Loss: CrossEntropyLoss (unweighted). LR: 0.0005 (constant). Class distribution: background=85%, road=5%, building=4%, vegetation=3%, vehicle=1.5%, person=0.8%, sky=0.5%, other=0.2%.",
+    "data_shape": "[4, 3, 640, 640]",
+    "training_logs": [
+      "Epoch 1  | train_loss=2.1892 | val_loss=2.2031 | mIoU=0.06",
+      "Epoch 2  | train_loss=1.8912 | val_loss=1.9123 | mIoU=0.09",
+      "Epoch 3  | train_loss=1.6213 | val_loss=1.6891 | mIoU=0.13",
+      "Epoch 4  | train_loss=1.4891 | val_loss=1.5672 | mIoU=0.16",
+      "Epoch 5  | train_loss=1.4123 | val_loss=1.5012 | mIoU=0.18",
+      "WARNING: Class imbalance detected. Background class dominates predictions. mIoU plateau at 0.18. Target: 0.55 in 5 more epochs."
+    ],
+    "current_metrics": {
+      "train_loss": 1.4123,
+      "val_loss": 1.5012,
+      "iou": 0.18,
+      "epochs_remaining": 5
+    }
+  },
+
+  "correct_actions": ["add_lr_scheduler", "change_loss_function"],
+
+  "responses": {
+    "dice_loss_only": {
+      "result": "partial",
+      "reward": 2.0,
+      "done": false,
+      "message": "✅ Dice loss applied. Handles class imbalance much better than CrossEntropy. IoU jumping but needs LR scheduling to converge fully.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.7812 | val_loss=0.8213 | mIoU=0.29",
+        "Epoch 7  | train_loss=0.6512 | val_loss=0.7012 | mIoU=0.35",
+        "Dice loss dramatically improving minority class predictions. Need scheduler."
+      ],
+      "metrics": {
+        "train_loss": 0.6512,
+        "val_loss": 0.7012,
+        "iou": 0.35,
+        "epochs_remaining": 3
+      }
+    },
+
+    "focal_loss_only": {
+      "result": "partial",
+      "reward": 2.0,
+      "done": false,
+      "message": "✅ Focal loss applied with gamma=2.0. Better focus on hard-to-classify pixels. IoU improving. Add a scheduler to push further.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.8123 | val_loss=0.8712 | mIoU=0.27",
+        "Epoch 7  | train_loss=0.7012 | val_loss=0.7612 | mIoU=0.32",
+        "Focal loss reducing easy-negative dominance. Scheduler needed for convergence."
+      ],
+      "metrics": {
+        "train_loss": 0.7012,
+        "val_loss": 0.7612,
+        "iou": 0.32,
+        "epochs_remaining": 3
+      }
+    },
+
+    "cosine_scheduler_only": {
+      "result": "partial",
+      "reward": 1.5,
+      "done": false,
+      "message": "⚠️ CosineAnnealing LR scheduler added. Small improvement but CrossEntropy can't handle the class imbalance. Switch loss function.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.2891 | val_loss=1.3512 | mIoU=0.22  LR=0.0004",
+        "Epoch 7  | train_loss=1.1812 | val_loss=1.2312 | mIoU=0.26  LR=0.0003",
+        "Scheduler alone insufficient. Background still dominates predictions."
+      ],
+      "metrics": {
+        "train_loss": 1.1812,
+        "val_loss": 1.2312,
+        "iou": 0.26,
+        "epochs_remaining": 3
+      }
+    },
+
+    "dice_and_cosine": {
+      "result": "success",
+      "reward": 7.0,
+      "done": true,
+      "message": "🏆 Perfect! Dice loss + CosineAnnealingLR conquered the class imbalance. mIoU=0.58 ≥ 0.55!",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.6812 | val_loss=0.7213 | mIoU=0.33  LR=0.0004",
+        "Epoch 7  | train_loss=0.5123 | val_loss=0.5812 | mIoU=0.43  LR=0.0003",
+        "Epoch 8  | train_loss=0.4012 | val_loss=0.4612 | mIoU=0.51  LR=0.0002",
+        "Epoch 9  | train_loss=0.3512 | val_loss=0.4012 | mIoU=0.55  LR=0.0001",
+        "Epoch 10 | train_loss=0.3201 | val_loss=0.3812 | mIoU=0.58  LR=0.00005",
+        "🎉 Target reached! mIoU=0.58 ≥ 0.55. All 8 classes now well-segmented."
+      ],
+      "metrics": {
+        "train_loss": 0.3201,
+        "val_loss": 0.3812,
+        "iou": 0.58,
+        "epochs_remaining": 0
+      }
+    },
+
+    "focal_and_cosine": {
+      "result": "success",
+      "reward": 7.0,
+      "done": true,
+      "message": "🏆 Excellent! Focal loss + CosineAnnealingLR achieved the target. mIoU=0.56 ≥ 0.55!",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.7213 | val_loss=0.7812 | mIoU=0.31  LR=0.0004",
+        "Epoch 7  | train_loss=0.5612 | val_loss=0.6213 | mIoU=0.40  LR=0.0003",
+        "Epoch 8  | train_loss=0.4512 | val_loss=0.5123 | mIoU=0.48  LR=0.0002",
+        "Epoch 9  | train_loss=0.3912 | val_loss=0.4512 | mIoU=0.53  LR=0.0001",
+        "Epoch 10 | train_loss=0.3612 | val_loss=0.4212 | mIoU=0.56  LR=0.00005",
+        "🎉 Target reached! mIoU=0.56 ≥ 0.55. Focal loss handled rare classes well."
+      ],
+      "metrics": {
+        "train_loss": 0.3612,
+        "val_loss": 0.4212,
+        "iou": 0.56,
+        "epochs_remaining": 0
+      }
+    },
+
+    "dice_and_step_scheduler": {
+      "result": "partial",
+      "reward": 3.0,
+      "done": false,
+      "message": "⚠️ Dice loss + StepLR got to IoU=0.46 — improved but StepLR's abrupt decay doesn't suit this task. Try CosineAnnealingLR.",
+      "training_logs": [
+        "Epoch 6  | train_loss=0.7012 | val_loss=0.7812 | mIoU=0.32",
+        "Epoch 8  | train_loss=0.5012 | val_loss=0.5812 | mIoU=0.40  LR step decay",
+        "Epoch 10 | train_loss=0.4212 | val_loss=0.4912 | mIoU=0.46",
+        "Under target. StepLR decay too aggressive for convergence."
+      ],
+      "metrics": {
+        "train_loss": 0.4212,
+        "val_loss": 0.4912,
+        "iou": 0.46,
+        "epochs_remaining": 0
+      }
+    },
+
+    "crossentropy_and_scheduler": {
+      "result": "partial",
+      "reward": 1.5,
+      "done": false,
+      "message": "⚠️ CrossEntropy + scheduler can't overcome the class imbalance. Background class dominates. Switch to Dice or Focal loss.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.1812 | val_loss=1.2312 | mIoU=0.24",
+        "Epoch 8  | train_loss=1.0012 | val_loss=1.0812 | mIoU=0.30",
+        "Epoch 10 | train_loss=0.9212 | val_loss=0.9912 | mIoU=0.34",
+        "Plateau at 0.34. CrossEntropy fundamentally limited for imbalanced segmentation."
+      ],
+      "metrics": {
+        "train_loss": 0.9212,
+        "val_loss": 0.9912,
+        "iou": 0.34,
+        "epochs_remaining": 0
+      }
+    },
+
+    "modify_hyperparameters": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Tuning LR/batch size alone won't fix class imbalance. The loss function needs to change.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.3891 | val_loss=1.4612 | mIoU=0.19",
+        "Marginal change. Class imbalance is the core issue."
+      ],
+      "metrics": {
+        "train_loss": 1.3891,
+        "val_loss": 1.4612,
+        "iou": 0.19,
+        "epochs_remaining": 4
+      }
+    },
+
+    "add_dropout": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Dropout is not the issue. The problem is class imbalance in the loss function.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.4312 | val_loss=1.5112 | mIoU=0.17",
+        "Dropout added noise. No benefit for this problem."
+      ],
+      "metrics": {
+        "train_loss": 1.4312,
+        "val_loss": 1.5112,
+        "iou": 0.17,
+        "epochs_remaining": 4
+      }
+    },
+
+    "add_data_augmentation": {
+      "result": "partial",
+      "reward": 0.5,
+      "done": false,
+      "message": "⚠️ Augmentation helps slightly with generalization but doesn't address the core loss function issue.",
+      "training_logs": [
+        "Epoch 6  | train_loss=1.3512 | val_loss=1.4012 | mIoU=0.21",
+        "Slight improvement from aug. Still need better loss for class imbalance."
+      ],
+      "metrics": {
+        "train_loss": 1.3512,
+        "val_loss": 1.4012,
+        "iou": 0.21,
+        "epochs_remaining": 4
+      }
+    },
+
+    "default": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Unknown action. For class-imbalanced segmentation: use change_loss_function (Dice or Focal) AND add_lr_scheduler (cosine).",
+      "training_logs": [
+        "No meaningful change. IoU still at 0.18."
+      ],
+      "metrics": {
+        "train_loss": 1.4123,
+        "val_loss": 1.5012,
+        "iou": 0.18,
+        "epochs_remaining": 5
+      }
+    }
+  }
+}

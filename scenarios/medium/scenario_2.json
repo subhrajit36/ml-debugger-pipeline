@@ -1,0 +1,118 @@
+{
+  "task_id": "task2_medium",
+  "scenario_id": 2,
+  "title": "Fix Bad Data Augmentation",
+  "description": "Someone added aggressive augmentation that distorts images too much — training loss is erratic and won't converge. Replace the augmentation strategy and add a scheduler.",
+  "difficulty": "medium",
+  "max_steps": 10,
+  "target_metric": "val_loss",
+  "target_val_loss": 1.2,
+
+  "initial_state": {
+    "error_log": "",
+    "architecture_summary": "ResNet-style: Conv2d(3,64) -> 4x ResidualBlock -> GlobalAvgPool -> Linear(512, 10). Augmentation: RandomRotation(180) + ColorJitter(0.9, 0.9, 0.9) + RandomErasing(p=0.9)",
+    "data_shape": "[32, 3, 224, 224]",
+    "training_logs": [
+      "Epoch 1  | train_loss=3.1201 | val_loss=3.0891",
+      "Epoch 2  | train_loss=3.0892 | val_loss=2.9812",
+      "Epoch 3  | train_loss=3.2013 | val_loss=3.1092  ← loss went UP",
+      "Epoch 4  | train_loss=3.0512 | val_loss=3.0123",
+      "Epoch 5  | train_loss=3.1892 | val_loss=3.0891",
+      "WARNING: Loss not converging. Erratic pattern. Check augmentation pipeline."
+    ],
+    "current_metrics": {
+      "train_loss": 3.1892,
+      "val_loss": 3.0891,
+      "accuracy": 0.11
+    }
+  },
+
+  "correct_actions": ["add_data_augmentation", "add_lr_scheduler"],
+
+  "responses": {
+    "add_augmentation_mild": {
+      "result": "partial",
+      "reward": 2.0,
+      "done": false,
+      "message": "✅ Mild augmentation applied (RandomHorizontalFlip + RandomCrop). Training is now converging. Add a scheduler to reach the target.",
+      "training_logs": [
+        "Epoch 6  | train_loss=2.2891 | val_loss=2.4013",
+        "Epoch 7  | train_loss=1.9812 | val_loss=2.1031",
+        "Epoch 8  | train_loss=1.7012 | val_loss=1.8912",
+        "Converging now. Needs LR scheduling to push further."
+      ],
+      "metrics": {
+        "train_loss": 1.7012,
+        "val_loss": 1.8912,
+        "accuracy": 0.44
+      }
+    },
+
+    "add_augmentation_aggressive": {
+      "result": "warning",
+      "reward": -0.5,
+      "done": false,
+      "message": "❌ Still using aggressive augmentation. The images are too distorted for the model to learn from. Use a milder strategy.",
+      "training_logs": [
+        "Epoch 6  | train_loss=3.2103 | val_loss=3.1892",
+        "Training still erratic. Augmentation too aggressive."
+      ],
+      "metrics": {
+        "train_loss": 3.2103,
+        "val_loss": 3.1892,
+        "accuracy": 0.10
+      }
+    },
+
+    "add_lr_scheduler_only": {
+      "result": "partial",
+      "reward": 1.0,
+      "done": false,
+      "message": "⚠️ Scheduler added but augmentation is still too aggressive. Fix augmentation first.",
+      "training_logs": [
+        "Epoch 6  | train_loss=3.0012 | val_loss=2.9812  LR decayed",
+        "Epoch 7  | train_loss=2.9123 | val_loss=2.8991",
+        "Marginal improvement. Augmentation still hurting training."
+      ],
+      "metrics": {
+        "train_loss": 2.9123,
+        "val_loss": 2.8991,
+        "accuracy": 0.14
+      }
+    },
+
+    "both_augmentation_and_scheduler": {
+      "result": "success",
+      "reward": 6.0,
+      "done": true,
+      "message": "✅ Perfect combination! Mild augmentation + CosineAnnealingLR scheduler. Val loss below 1.2!",
+      "training_logs": [
+        "Epoch 6  | train_loss=2.1032 | val_loss=2.2891  LR=0.01",
+        "Epoch 7  | train_loss=1.6812 | val_loss=1.8013  LR=0.007",
+        "Epoch 8  | train_loss=1.3012 | val_loss=1.4891  LR=0.004",
+        "Epoch 9  | train_loss=1.1023 | val_loss=1.1812  LR=0.002",
+        "🎉 Target reached! val_loss=1.1812 < 1.2"
+      ],
+      "metrics": {
+        "train_loss": 1.1023,
+        "val_loss": 1.1812,
+        "accuracy": 0.67
+      }
+    },
+
+    "default": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Unknown action. Hint: The current augmentation is too aggressive. Try add_data_augmentation with strategy='mild' and then add_lr_scheduler.",
+      "training_logs": [
+        "No change. Training still erratic."
+      ],
+      "metrics": {
+        "train_loss": 3.1892,
+        "val_loss": 3.0891,
+        "accuracy": 0.11
+      }
+    }
+  }
+}

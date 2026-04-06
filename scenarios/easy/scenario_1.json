@@ -1,0 +1,161 @@
+{
+  "task_id": "task1_easy",
+  "scenario_id": 1,
+  "title": "Fix Tensor Dimension Mismatch",
+  "description": "A CNN model fails because the output of the Conv layers doesn't match what the Linear layer expects. Fix the reshape.",
+  "difficulty": "easy",
+  "max_steps": 5,
+  "target_metric": "forward_pass_success",
+
+  "initial_state": {
+    "error_log": "RuntimeError: mat1 and mat2 shapes cannot be multiplied (512x7x7 vs 25088x4096). Check your Linear layer input size.",
+    "architecture_summary": "Conv2d(3,64,3) -> ReLU -> MaxPool2d(2) -> Conv2d(64,128,3) -> ReLU -> MaxPool2d(2) -> Flatten -> Linear(WRONG_SIZE, 4096) -> Linear(4096, 10)",
+    "data_shape": "[32, 3, 224, 224]",
+    "training_logs": [
+      "Epoch 1 | Loading batch... OK",
+      "Epoch 1 | Forward pass... FAILED",
+      "RuntimeError: mat1 and mat2 shapes cannot be multiplied (512x7x7 vs 25088x4096)"
+    ],
+    "current_metrics": {
+      "train_loss": -1.0,
+      "val_loss": -1.0,
+      "forward_pass_success": 0.0
+    }
+  },
+
+  "correct_actions": ["fix_tensor_reshape"],
+
+  "responses": {
+    "fix_tensor_reshape_correct": {
+      "result": "success",
+      "reward": 5.5,
+      "done": true,
+      "message": "✅ Correct! Linear layer input reshaped to 25088. Forward pass successful.",
+      "training_logs": [
+        "Epoch 1 | Loading batch... OK",
+        "Epoch 1 | Forward pass... OK",
+        "Epoch 1 | train_loss=2.3102",
+        "Epoch 1 | val_loss=2.2987",
+        "Training stable. No errors."
+      ],
+      "metrics": {
+        "train_loss": 2.3102,
+        "val_loss": 2.2987,
+        "forward_pass_success": 1.0
+      }
+    },
+
+    "fix_tensor_reshape_wrong_shape": {
+      "result": "error",
+      "reward": -0.5,
+      "done": false,
+      "message": "❌ Wrong shape value. The flatten output is 25088, not what you provided. Hint: 128 channels × 14 × 14 spatial = 25088.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: shapes still don't match. Expected 25088, got wrong value."
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "modify_hyperparameters": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Changing hyperparameters won't fix a shape mismatch. The architecture itself is broken.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: mat1 and mat2 shapes cannot be multiplied (512x7x7 vs 25088x4096)"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "add_data_augmentation": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Data augmentation won't fix a shape mismatch. The model can't even do a forward pass yet.",
+      "training_logs": [
+        "Epoch 1 | Augmentation applied... OK",
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: mat1 and mat2 shapes cannot be multiplied"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "change_loss_function": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Changing the loss function won't help — the model crashes before it even reaches the loss calculation.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: mat1 and mat2 shapes cannot be multiplied"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "add_dropout": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Adding dropout won't fix the shape mismatch. Fix the architecture first.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: mat1 and mat2 shapes cannot be multiplied"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "add_lr_scheduler": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ A learning rate scheduler has no effect when training crashes at the forward pass.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: mat1 and mat2 shapes cannot be multiplied"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    },
+
+    "default": {
+      "result": "warning",
+      "reward": 0.0,
+      "done": false,
+      "message": "⚠️ Unknown action. Try: fix_tensor_reshape with layer_name='linear1' and new_shape=25088.",
+      "training_logs": [
+        "Epoch 1 | Forward pass... FAILED",
+        "RuntimeError: mat1 and mat2 shapes cannot be multiplied"
+      ],
+      "metrics": {
+        "train_loss": -1.0,
+        "val_loss": -1.0,
+        "forward_pass_success": 0.0
+      }
+    }
+  }
+}
